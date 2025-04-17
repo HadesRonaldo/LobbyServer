@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Lobby</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #00b4d8, #90e0ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4CAF50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .lobby-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .game-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .game-card h3 {
+            margin: 0 0 1rem 0;
+            color: #90e0ef;
+        }
+        .game-card p {
+            margin: 0;
+            color: #ccc;
+        }
+        .player-count {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            color: #4CAF50;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+            margin-right: 0.5rem;
+        }
+        .status-indicator.offline {
+            background: #ff6b6b;
+        }
+        .chat-container {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px 10px 0 0;
+            margin: 1rem;
+        }
+        .chat-header {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+        }
+        .chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        .chat-input {
+            display: flex;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .chat-input button {
+            margin-left: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Game Lobby 参见大萌大王</h1>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <span id="username">User</span>
+            </div>
+        </div>
+        
+        <div class="lobby-grid">
+            <div class="game-card">
+                <h3>Quick Match</h3>
+                <p>Join a random game</p>
+                <div class="player-count">
+                    <span class="status-indicator"></span>
+                    <span id="quickMatchPlayers">0 players</span>
+                </div>
+            </div>
+            <div class="game-card">
+                <h3>Custom Game</h3>
+                <p>Create your own game</p>
+                <div class="player-count">
+                    <span class="status-indicator"></span>
+                    <span id="customGamePlayers">0 players</span>
+                </div>
+            </div>
+            <div class="game-card">
+                <h3>Tournament</h3>
+                <p>Join a tournament</p>
+                <div class="player-count">
+                    <span class="status-indicator"></span>
+                    <span id="tournamentPlayers">0 players</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">Global Chat</div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Type a message...">
+            <button id="sendMessage">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Get username from token
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        // Decode token to get username
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        document.getElementById('username').textContent = payload.username;
+        document.getElementById('userAvatar').textContent = payload.username.charAt(0).toUpperCase();
+
+        // WebSocket connection
+        const socket = io();
+
+        // Handle WebSocket events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            socket.emit('joinLobby', { username: payload.username });
+        });
+
+        socket.on('playerCountUpdate', (data) => {
+            document.getElementById('quickMatchPlayers').textContent = `${data.quickMatch} players`;
+            document.getElementById('customGamePlayers').textContent = `${data.customGame} players`;
+            document.getElementById('tournamentPlayers').textContent = `${data.tournament} players`;
+        });
+
+        socket.on('chatMessage', (data) => {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageElement = document.createElement('div');
+            messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        // Handle chat input
+        document.getElementById('sendMessage').addEventListener('click', () => {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                socket.emit('chatMessage', {
+                    username: payload.username,
+                    message: message
+                });
+                input.value = '';
+            }
+        });
+
+        // Handle Enter key in chat
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('sendMessage').click();
+            }
+        });
+
+        // Heartbeat to keep connection alive
+        setInterval(() => {
+            socket.emit('heartbeat', { time: Date.now() });
+        }, 10000);
+    </script>
+</body>
+</html> 
