@@ -32,7 +32,7 @@ app.use('/api', routes_1.default);
 // Create HTTPS server
 const server = https_1.default.createServer(options, app);
 // Initialize WebSocket server
-const io = new socket_io_1.Server(server, { cors: { origin: "*" } });
+const io = new socket_io_1.Server(server);
 // **Track WebSocket sessions**
 const activeSessions = new Map();
 io.on("connection", (socket) => {

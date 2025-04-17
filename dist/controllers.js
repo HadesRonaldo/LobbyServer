@@ -42,7 +42,8 @@ const userService = __importStar(require("./services"));
 // .json(result) → Sends result back to the client as a JSON response.
 const register = (req, res) => {
     const result = userService.registerUser(req.body);
-    res.status(result.success ? 200 : 400).json(result);
+    // res.status(result.success ? 200 : 400).json(result);
+    res.status(200).json(result);
 };
 exports.register = register;
 const login = (req, res) => {

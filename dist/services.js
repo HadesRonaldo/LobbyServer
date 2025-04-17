@@ -19,10 +19,21 @@ const writeUsers = (users) => {
 const registerUser = (userData) => {
     const users = readUsers();
     if (users.find(user => user.username === userData.username)) {
+        console.log('Username already exists');
         return { success: false, message: 'Username already exists' };
     }
-    const passwordHash = bcrypt_1.default.hashSync(userData.password, 10);
-    users.push({ username: userData.username, passwordHash });
+    if (userData.username.length < 1) {
+        console.log('UserName is empty');
+        return { success: false, message: 'UserName is empty' };
+    }
+    if (userData.password.length < 1) {
+        console.log('Password is empty');
+        return { success: false, message: 'Password is empty' };
+    }
+    const password = bcrypt_1.default.hashSync(userData.password, 10);
+    const user = { username: userData.username, passwordHash: password, email: userData.email };
+    users.push(user);
+    console.log(users);
     writeUsers(users);
     return { success: true, message: 'User registered successfully' };
 };
