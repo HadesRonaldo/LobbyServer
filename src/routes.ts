@@ -1,13 +1,20 @@
 import { Router } from 'express';
-import { register, login, getAccountData, updateAccountData, refreshAccessToken } from './controllers';
-import { authenticateToken } from './middleware';
+import { register, login, getAccountData, updateAccountData, refreshAccessToken, forgotPassword, resetPassword } from './controllers';
+import { authenticateToken, authLimiter, apiLimiter } from './middleware';
 
 const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.get('/account', authenticateToken, getAccountData);
-router.put('/account', authenticateToken, updateAccountData);
-router.post('/refresh-token', refreshAccessToken);
+// Apply rate limiting to authentication endpoints
+router.post('/register', authLimiter, register);
+router.post('/login', authLimiter, login);
+router.post('/refresh-token', authLimiter, refreshAccessToken);
+
+// Apply rate limiting to protected endpoints
+router.get('/account', apiLimiter, authenticateToken, getAccountData);
+router.put('/account', apiLimiter, authenticateToken, updateAccountData);
+
+// Password reset routes
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 export default router;

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Lobby</title>
+    <script type="module" src="/js/main.js"></script>
     <style>
         body {
             margin: 0;
@@ -177,67 +178,5 @@
             <button id="sendMessage">Send</button>
         </div>
     </div>
-
-    <script>
-        // Get username from token
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/login.html';
-        }
-
-        // Decode token to get username
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        document.getElementById('username').textContent = payload.username;
-        document.getElementById('userAvatar').textContent = payload.username.charAt(0).toUpperCase();
-
-        // WebSocket connection
-        const socket = io();
-
-        // Handle WebSocket events
-        socket.on('connect', () => {
-            console.log('Connected to server');
-            socket.emit('joinLobby', { username: payload.username });
-        });
-
-        socket.on('playerCountUpdate', (data) => {
-            document.getElementById('quickMatchPlayers').textContent = `${data.quickMatch} players`;
-            document.getElementById('customGamePlayers').textContent = `${data.customGame} players`;
-            document.getElementById('tournamentPlayers').textContent = `${data.tournament} players`;
-        });
-
-        socket.on('chatMessage', (data) => {
-            const chatMessages = document.getElementById('chatMessages');
-            const messageElement = document.createElement('div');
-            messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
-            chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        });
-
-        // Handle chat input
-        document.getElementById('sendMessage').addEventListener('click', () => {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            
-            if (message) {
-                socket.emit('chatMessage', {
-                    username: payload.username,
-                    message: message
-                });
-                input.value = '';
-            }
-        });
-
-        // Handle Enter key in chat
-        document.getElementById('chatInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('sendMessage').click();
-            }
-        });
-
-        // Heartbeat to keep connection alive
-        setInterval(() => {
-            socket.emit('heartbeat', { time: Date.now() });
-        }, 10000);
-    </script>
 </body>
 </html> 

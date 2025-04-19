@@ -4,20 +4,31 @@ import fs from 'fs';
 import path from 'path';
 import { Server, Socket, ServerOptions } from 'socket.io';
 import routes from './routes';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
-const PORT: number = 443;
+const PORT = process.env.PORT || 443;
 
 // Load SSL certificate & private key safely
 let options: https.ServerOptions;
 try {
+    const keyPath = process.env.SSL_KEY_PATH || 'certificates/private-key.pem';
+    const certPath = process.env.SSL_CERT_PATH || 'certificates/certificate.pem';
+    
+    if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+        throw new Error('SSL certificate files not found');
+    }
+
     options = {
-        key: fs.readFileSync('certificates/private-key.pem'),
-        cert: fs.readFileSync('certificates/certificate.pem')
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
     };
 } catch (error) {
     console.error("⚠️ SSL Certificate Error:", error);
-    process.exit(1); // Exit if SSL files are missing
+    process.exit(1);
 }
 
 // Middleware for JSON request parsing
